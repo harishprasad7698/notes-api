@@ -1,4 +1,4 @@
-from fastapi import FastAPI,Depends,HTTPException
+from fastapi import FastAPI,Depends,HTTPException,status
 from pydantic import BaseModel,Field
 from app.database import SessionLocal, engine
 from app import models
@@ -44,3 +44,23 @@ def get_note(note_id: int, db: Session = Depends(get_db)):
     if note is None:
         raise HTTPException(status_code=404 , detail="not found")
     return note
+
+@app.delete("/notes/{note_id}",status_code=status.HTTP_204_NO_CONTENT)
+def delete_note(note_id:int,db:Session = Depends(get_db)):
+    note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    if note is None:
+        raise HTTPException(status_code=404 , detail="not found")
+    db.delete(note)
+    db.commit()
+
+@app.put("/notes/{note_id}")
+def update_note(note_id :int, update_note:Note,db:Session = Depends(get_db)):
+    existing_note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    if existing_note is None:
+        raise HTTPException(status_code=404 , detail="not found")
+    existing_note.title = update_note.title
+    existing_note.content = update_note.content
+    db.commit()
+    db.refresh(existing_note)
+    return existing_note
+    
