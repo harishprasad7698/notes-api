@@ -1,7 +1,7 @@
 from fastapi import FastAPI,Depends,HTTPException,status
 from pydantic import BaseModel,Field
 from app.database import SessionLocal, engine
-from app import models
+from app import models,auth
 from sqlalchemy.orm import Session
 
 app = FastAPI()
@@ -17,6 +17,10 @@ class Note(BaseModel):
     title:str = Field(min_length=1)
     content:str = Field(min_length=1)
 
+class UserCreate(BaseModel):
+    username :str = Field(min_length=4)
+    password :str = Field(min_length=8)
+    
 @app.get("/")
 def read_root():
     return {"message": "Welcome to my Notes API"}
@@ -64,3 +68,13 @@ def update_note(note_id :int, update_note:Note,db:Session = Depends(get_db)):
     db.refresh(existing_note)
     return existing_note
     
+@app.post("/register",status_code=status.HTTP_201_CREATED)
+def create_user (user:UserCreate,db : Session = Depends(get_db)):
+    existing_user=db.query(models.User).filter(models.User.username == user.username).first()
+    if existing_user is not None:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username exist")
+    new_user = models.User(username = user.username,hashed_pass = auth.hash_password(user.password))
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {"username":new_user.username,"id":new_user.id}
