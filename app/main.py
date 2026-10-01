@@ -20,6 +20,10 @@ class Note(BaseModel):
 class UserCreate(BaseModel):
     username :str = Field(min_length=4)
     password :str = Field(min_length=8)
+
+class UserLogin(BaseModel):
+    username :str
+    password :str
     
 @app.get("/")
 def read_root():
@@ -78,3 +82,13 @@ def create_user (user:UserCreate,db : Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     return {"username":new_user.username,"id":new_user.id}
+
+@app.post("/login")
+def login(credentials:UserLogin,db : Session =Depends(get_db)):
+    user = db.query(models.User).filter(models.User.username==credentials.username).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
+    if auth.verify_password(credentials.password,user.hashed_pass):
+        return {"access_token":auth.create_access_token({"sub":credentials.username}), "token_type": "bearer"}
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Incorrect username or password")
