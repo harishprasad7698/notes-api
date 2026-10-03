@@ -1,18 +1,13 @@
 from fastapi import FastAPI,Depends,HTTPException,status
 from pydantic import BaseModel,Field
 from app.database import SessionLocal, engine
-from app import models,auth
+from app import models,auth,database
 from sqlalchemy.orm import Session
 
 app = FastAPI()
 models.Base.metadata.create_all(bind=engine)
 
-def get_db():
-    db =SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+
 class Note(BaseModel):
     title:str = Field(min_length=1)
     content:str = Field(min_length=1)
@@ -35,7 +30,7 @@ def health_check():
 
 
 @app.post("/notes")
-def create_notes(note:Note, db : Session = Depends(get_db)):
+def create_notes(note:Note, db : Session = Depends(database.get_db),current_user: models.User = Depends(auth.get_current_user)):
     new_note = models.Note(title = note.title, content = note.content)
     db.add(new_note)
     db.commit()
@@ -43,18 +38,18 @@ def create_notes(note:Note, db : Session = Depends(get_db)):
     return new_note
 
 @app.get("/notes")
-def get_notes(db: Session = Depends(get_db)):
+def get_notes(db: Session = Depends(database.get_db),current_user: models.User = Depends(auth.get_current_user)):
     return db.query(models.Note).all()
 
 @app.get("/notes/{note_id}")
-def get_note(note_id: int, db: Session = Depends(get_db)):
+def get_note(note_id: int, db: Session = Depends(database.get_db),current_user: models.User = Depends(auth.get_current_user)):
     note = db.query(models.Note).filter(models.Note.id == note_id).first()
     if note is None:
         raise HTTPException(status_code=404 , detail="not found")
     return note
 
 @app.delete("/notes/{note_id}",status_code=status.HTTP_204_NO_CONTENT)
-def delete_note(note_id:int,db:Session = Depends(get_db)):
+def delete_note(note_id:int,db:Session = Depends(database.get_db),current_user: models.User = Depends(auth.get_current_user)):
     note = db.query(models.Note).filter(models.Note.id == note_id).first()
     if note is None:
         raise HTTPException(status_code=404 , detail="not found")
@@ -62,7 +57,7 @@ def delete_note(note_id:int,db:Session = Depends(get_db)):
     db.commit()
 
 @app.put("/notes/{note_id}")
-def update_note(note_id :int, update_note:Note,db:Session = Depends(get_db)):
+def update_note(note_id :int, update_note:Note,db:Session = Depends(database.get_db),current_user: models.User = Depends(auth.get_current_user)):
     existing_note = db.query(models.Note).filter(models.Note.id == note_id).first()
     if existing_note is None:
         raise HTTPException(status_code=404 , detail="not found")
@@ -73,7 +68,7 @@ def update_note(note_id :int, update_note:Note,db:Session = Depends(get_db)):
     return existing_note
     
 @app.post("/register",status_code=status.HTTP_201_CREATED)
-def create_user (user:UserCreate,db : Session = Depends(get_db)):
+def create_user (user:UserCreate,db : Session = Depends(database.get_db)):
     existing_user=db.query(models.User).filter(models.User.username == user.username).first()
     if existing_user is not None:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username exist")
@@ -84,7 +79,7 @@ def create_user (user:UserCreate,db : Session = Depends(get_db)):
     return {"username":new_user.username,"id":new_user.id}
 
 @app.post("/login")
-def login(credentials:UserLogin,db : Session =Depends(get_db)):
+def login(credentials:UserLogin,db : Session =Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.username==credentials.username).first()
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
@@ -92,3 +87,4 @@ def login(credentials:UserLogin,db : Session =Depends(get_db)):
         return {"access_token":auth.create_access_token({"sub":credentials.username}), "token_type": "bearer"}
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Incorrect username or password")
+
