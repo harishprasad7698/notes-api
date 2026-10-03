@@ -40,7 +40,30 @@ The `/notes` endpoints require an `Authorization: Bearer <token>` header. Get a 
 
 ## Running Locally
 
-(keep your existing steps 1–5 exactly as they are)
+1. Clone the repository:
+```bash
+   git clone git@github.com:harishprasad7698/notes-api.git
+   cd notes-api
+```
+
+2. Create and activate a virtual environment:
+```bash
+   python -m venv venv
+   venv\Scripts\Activate.ps1   # Windows PowerShell
+```
+
+3. Install dependencies:
+```bash
+   pip install -r requirements.txt
+```
+
+4. Run the server:
+```bash
+   uvicorn app.main:app --reload
+```
+
+5. Open the interactive docs:
+http://127.0.0.1:8000/docs
 
 ## Project Structure
 
