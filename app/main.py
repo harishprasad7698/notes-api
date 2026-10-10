@@ -31,7 +31,7 @@ def health_check():
 
 @app.post("/notes")
 def create_notes(note:Note, db : Session = Depends(database.get_db),current_user: models.User = Depends(auth.get_current_user)):
-    new_note = models.Note(title = note.title, content = note.content)
+    new_note = models.Note(title = note.title, content = note.content,owner_id=current_user.id)
     db.add(new_note)
     db.commit()
     db.refresh(new_note)
@@ -39,30 +39,32 @@ def create_notes(note:Note, db : Session = Depends(database.get_db),current_user
 
 @app.get("/notes")
 def get_notes(db: Session = Depends(database.get_db),current_user: models.User = Depends(auth.get_current_user)):
-    return db.query(models.Note).all()
+    return db.query(models.Note).filter(models.Note.owner_id==current_user.id).all()
 
 @app.get("/notes/{note_id}")
 def get_note(note_id: int, db: Session = Depends(database.get_db),current_user: models.User = Depends(auth.get_current_user)):
-    note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    
+    note = db.query(models.Note).filter(models.Note.id == note_id,models.Note.owner_id== current_user.id).first()
+    
     if note is None:
         raise HTTPException(status_code=404 , detail="not found")
     return note
 
 @app.delete("/notes/{note_id}",status_code=status.HTTP_204_NO_CONTENT)
 def delete_note(note_id:int,db:Session = Depends(database.get_db),current_user: models.User = Depends(auth.get_current_user)):
-    note = db.query(models.Note).filter(models.Note.id == note_id).first()
+    note = db.query(models.Note).filter(models.Note.id == note_id,models.Note.owner_id==current_user.id).first()
     if note is None:
         raise HTTPException(status_code=404 , detail="not found")
     db.delete(note)
     db.commit()
 
 @app.put("/notes/{note_id}")
-def update_note(note_id :int, update_note:Note,db:Session = Depends(database.get_db),current_user: models.User = Depends(auth.get_current_user)):
-    existing_note = db.query(models.Note).filter(models.Note.id == note_id).first()
+def update_note(note_id :int, note_data:Note,db:Session = Depends(database.get_db),current_user: models.User = Depends(auth.get_current_user)):
+    existing_note = db.query(models.Note).filter(models.Note.id == note_id,models.Note.owner_id==current_user.id).first()
     if existing_note is None:
         raise HTTPException(status_code=404 , detail="not found")
-    existing_note.title = update_note.title
-    existing_note.content = update_note.content
+    existing_note.title = note_data.title
+    existing_note.content = note_data.content
     db.commit()
     db.refresh(existing_note)
     return existing_note

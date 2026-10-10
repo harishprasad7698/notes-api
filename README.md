@@ -82,4 +82,4 @@ notes-api/
 
 ## Status
 
-Core CRUD and authentication are complete (registration, login, JWT-protected note endpoints). In progress: per-user note ownership, Docker support, and background task processing.
+Core CRUD and authentication are complete (registration, login, JWT-protected note endpoints), and notes are now per-user: users can only read, edit, and delete their own notes. In progress: Docker support and background task processing.
