@@ -24,14 +24,14 @@ A RESTful API for creating, reading, updating, and deleting notes, built with Fa
 
 ## Endpoints
 
-The `/notes` endpoints require an `Authorization: Bearer <token>` header. Get a token from `/login`.
+The `/notes` endpoints require an `Authorization: Bearer <token>` header. Get a token from `/login`.`/login` takes username and password in formfield not in JSON
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/` | Welcome message |
 | GET | `/health` | Health check |
 | POST | `/register` | Register a new user |
-| POST | `/login` | Log in and receive a JWT |
+| POST | `/login` | Authorize button handles Log in and receive a JWT |
 | POST | `/notes` | Create a new note |
 | GET | `/notes` | List all notes |
 | GET | `/notes/{id}` | Get a single note by ID |
