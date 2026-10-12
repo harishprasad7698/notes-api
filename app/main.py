@@ -1,4 +1,5 @@
 from fastapi import FastAPI,Depends,HTTPException,status
+from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel,Field
 from app.database import SessionLocal, engine
 from app import models,auth,database
@@ -16,9 +17,7 @@ class UserCreate(BaseModel):
     username :str = Field(min_length=4)
     password :str = Field(min_length=8)
 
-class UserLogin(BaseModel):
-    username :str
-    password :str
+
     
 @app.get("/")
 def read_root():
@@ -81,12 +80,12 @@ def create_user (user:UserCreate,db : Session = Depends(database.get_db)):
     return {"username":new_user.username,"id":new_user.id}
 
 @app.post("/login")
-def login(credentials:UserLogin,db : Session =Depends(database.get_db)):
-    user = db.query(models.User).filter(models.User.username==credentials.username).first()
+def login(form_data:OAuth2PasswordRequestForm=Depends(),db : Session =Depends(database.get_db)):
+    user = db.query(models.User).filter(models.User.username==form_data.username).first()
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
-    if auth.verify_password(credentials.password,user.hashed_pass):
-        return {"access_token":auth.create_access_token({"sub":credentials.username}), "token_type": "bearer"}
+    if auth.verify_password(form_data.password,user.hashed_pass):
+        return {"access_token":auth.create_access_token({"sub":form_data.username}), "token_type": "bearer"}
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Incorrect username or password")
 
