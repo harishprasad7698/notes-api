@@ -65,6 +65,9 @@ The `/notes` endpoints require an `Authorization: Bearer <token>` header. Get a 
 5. Open the interactive docs:
 http://127.0.0.1:8000/docs
 
+## Running with Docker
+docker build -t notes-api .
+docker run -p 8000:8000 --env-file .env notes-api
 ## Project Structure
 
 ```
